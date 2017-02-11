@@ -1,25 +1,36 @@
-# -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file 'QT/Labyrinthe/mainwindow.ui'
-#
-# Created by: PyQt5 UI code generator 5.7.1
-#
-# WARNING! All changes made in this file will be lost!
-import numpy
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QKeySequence
-
-from labyrinthe import Labyrinthe
-from main import genere_grille, deplacement
+import numpy as np
+from PyQt5 import QtCore, QtWidgets
+from qlabyrintheview import QLabyrintheView
+from main import genere_grille, deplacement, grille_vierge
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow, n, p, fin, direction):
+    def __init__(self, n, p, fin, direction):
         self.grille, self.debut, T, self.chemin = genere_grille(n, p, fin, direction)
         print('Done')
 
         self.position = self.debut
 
+        x = fin[0] + [-1, 1, 0, 0][direction]
+        y = fin[1] + [0, 0, -1, 1][direction]
+        self.fin = x, y
+
+        self.textes = T
+        self.colors = np.zeros((n, p), dtype=object)
+
+        T_tmp = T.copy()
+        T_tmp[T_tmp == np.inf] = -np.inf
+        m = T_tmp.max()
+        for i in range(n):
+            for j in range(p):
+                x = T[i, j] / m
+                r = 255
+                g = 0
+                b = 0
+                a = min(x * 200, 255)
+                self.colors[i, j] = r, g, b, a
+
+    def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(852, 467)
         self.centralWidget = QtWidgets.QWidget(MainWindow)
@@ -28,9 +39,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setContentsMargins(11, 11, 11, 11)
         self.horizontalLayout.setSpacing(6)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        x = fin[0] + [-1, 1, 0, 0][direction]
-        y = fin[1] + [0, 0, -1, 1][direction]
-        self.graphicsView = Labyrinthe(self.grille, self.debut, x, y, self.chemin, T, self.centralWidget)
+        self.graphicsView = QLabyrintheView(self.grille, self.debut, self.fin, self.chemin, self.textes, self.colors,
+                                            self.centralWidget)
         self.graphicsView.setObjectName("graphicsView")
         self.horizontalLayout.addWidget(self.graphicsView)
         self.verticalLayout = QtWidgets.QVBoxLayout()
@@ -48,9 +58,10 @@ class Ui_MainWindow(object):
         self.verticalLayout.addWidget(self.pushButtonLeft)
         self.pushButtonRight = QtWidgets.QPushButton(self.centralWidget)
         self.pushButtonRight.setObjectName("pushButtonRight")
+        self.verticalLayout.addWidget(self.pushButtonRight)
         self.pushButtonRestart = QtWidgets.QPushButton(self.centralWidget)
         self.pushButtonRestart.setObjectName("pushButtonRestart")
-        self.verticalLayout.addWidget(self.pushButtonRight)
+        self.verticalLayout.addWidget(self.pushButtonRestart)
         self.horizontalLayout.addLayout(self.verticalLayout)
         MainWindow.setCentralWidget(self.centralWidget)
         self.menuBar = QtWidgets.QMenuBar(MainWindow)
@@ -80,23 +91,23 @@ class Ui_MainWindow(object):
 
     def restart(self):
         self.position = self.debut
-        self.graphicsView.move(self.position[0], self.position[1])
+        self.graphicsView.move(self.position)
 
     def down(self):
-        self.position = deplacement(self.grille, self.position, 1)
-        self.graphicsView.move(self.position[0], self.position[1])
+        self.position = deplacement(self.grille, self.position, 2)
+        self.graphicsView.move(self.position)
 
     def up(self):
         self.position = deplacement(self.grille, self.position, 0)
-        self.graphicsView.move(self.position[0], self.position[1])
+        self.graphicsView.move(self.position)
 
     def left(self):
-        self.position = deplacement(self.grille, self.position, 2)
-        self.graphicsView.move(self.position[0], self.position[1])
+        self.position = deplacement(self.grille, self.position, 3)
+        self.graphicsView.move(self.position)
 
     def right(self):
-        self.position = deplacement(self.grille, self.position, 3)
-        self.graphicsView.move(self.position[0], self.position[1])
+        self.position = deplacement(self.grille, self.position, 1)
+        self.graphicsView.move(self.position)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
@@ -113,7 +124,10 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication(sys.argv)
     MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow, 10, 10, (0, 5), 0)
-    MainWindow.show()
+    n, p = 5, 5
+    fin = 0, 2
+    direction = 0
+    ui = Ui_MainWindow(n, p, fin, direction)
+    ui.setupUi(MainWindow, )
+    MainWindow.showMaximized()
     sys.exit(app.exec_())
