@@ -138,8 +138,8 @@ def note_grille(grille, fin, direction):
     #         T_tmp[debut] = -np.inf
 
     if est_connexe(grille, T, debut):
-        deltas, distances = deltas_and_distances(grille, T, debut, fin)
-        note = 10 * T[debut] - (angles(grille) + 2 * lignes(grille)) / 5 + 5 * deltas
+        deltas, distances = deltas_and_distances(grille, T)
+        note = T[debut] - angles(grille) + deltas / 10
         return debut, note, T
     else:
         return False, 0, False
@@ -222,16 +222,16 @@ def nombre_choix(grille, T, debut, fin, x):
     return c
 
 
-def deltas_and_distances(grille, T, debut, fin):
-    p = debut
+def deltas_and_distances(grille, T):
     delta = 0
     distance = 0
-    while p != fin:
-        q = p
-        l = [deplacement(grille, p, d) for d in range(4)]
-        p = l[np.argmin([T[k] for k in l])]
-        delta += sum([T[p] - T[q] for p in l if T[p] - T[q] != np.inf])
-        distance += abs(q[0] + q[1] - p[0] - p[1])
+    for i in range(grille.shape[0]):
+        for j in range(grille.shape[1]):
+            u = i, j
+            l = [deplacement(grille, u, d) for d in range(4)]
+            for v in l:
+                delta += abs(T[u] - T[v]) if abs(T[u] - T[v]) != np.inf else 0
+                distance += abs(u[0] + u[1] - v[0] - v[1])
     return delta, distance
 
 
@@ -275,26 +275,17 @@ def genere_grille_aux(n, p, position_fin, direction):
     """
     grille = grille_vierge(n, p)
     best_position, best_note, best_T = position_fin, 1, None
-    l = n * p * 100
-    for k in range(n * p):
+    l = n * p * 10
+    for k in range(l):
         # if k % int(l / 10) == 0:
         #     print("Note: {}, {}%".format(best_note, round(100 * k / l, 1)))
 
-        if k == 0:
-            if direction % 2 == 0:
-                i = np.random.randint(n - 1)
-                j = position_fin[1]
-                d = 2
-            else:
-                i = position_fin[0]
-                j = np.random.randint(p - 1)
-                d = 3
-        else:
-            i = np.random.randint(n)
-            j = np.random.randint(p)
-            d = np.random.randint(4)
+        i = np.random.randint(n)
+        j = np.random.randint(p)
+        d = np.random.randint(4)
 
-        if not ((d == 0 and i == 0) or (d == 1 and j == p - 1) or (d == 2 and i == n - 1) or (d == 3 and j == 0)):
+        if not ((d == 0 and i == 0) or (d == 1 and j == p - 1) or (d == 2 and i == n - 1) or (d == 3 and j == 0)) and \
+                grille[i, j, d]:
             modifier_barriere(grille, i, j, d, False)
 
             position, note, T = note_grille(grille, position_fin, direction)
@@ -313,7 +304,7 @@ def genere_grille_aux(n, p, position_fin, direction):
 
 def genere_grille(n, p, position_fin, direction):
     best_grille, best_position, best_T, best_chemin, best_note = None, None, None, None, -50
-    l = 100
+    l = 10
     for k in range(l):
         if k % 1 == 0:
             print("Best Note: {}, {}%".format(best_note, round(100 * k / l, 1)))
